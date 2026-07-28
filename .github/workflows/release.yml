@@ -14,10 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Bundle protocol into integration
+      - name: Create zip for HACS
         run: |
-          rm -rf custom_components/somfy_rts/protocol
-          cp -r somfy_rts_protocol custom_components/somfy_rts/protocol
+          cd custom_components
+          zip -r ../somfy_rts.zip somfy_rts/
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2

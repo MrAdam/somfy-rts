@@ -44,43 +44,57 @@ ln -s "$(pwd)/somfy-rts/custom_components/somfy_rts" custom_components/somfy_rts
 
 ### Finding your remote's parameters
 
-The integration needs three values from your Somfy RTS remote:
+You need three values from your Somfy RTS remote: **address**, **rolling code**,
+and **key byte**. Use the included decoder script to extract them from a raw
+capture.
 
-| Parameter | How to find it |
-|-----------|---------------|
-| Address | Check the battery compartment sticker (6 hex digits), or capture with SDR/CC1101 |
-| Rolling code | Start at 0 — the motor accepts any counter higher than the last seen value |
-| Encryption key | Uses Telis 1 default (`0xA7`), configurable |
+**Step 1: Enable raw capture on your RF Proxy**
 
-To capture your remote's parameters:
+Add ``dump: raw`` to the ``remote_receiver`` in your ESPHome config
+(see ``docs/rf_proxy.yaml`` for a complete example).
 
-1. Enable `dump: raw` on your ESPHome receiver (see `docs/rf_proxy.yaml`)
-2. Press a button on your remote while watching ESPHome logs
-3. Decode the raw timings using the protocol library (see below)
-
-Or use the standalone protocol library:
-
-```python
-from somfy_rts_protocol import build_frame, deobfuscate, checksum_valid
-
-# After capturing and decoding raw timings:
-frame = bytes.fromhex("A1BEA4168183AA")
-plain = deobfuscate(frame)
-assert checksum_valid(plain)
-# Extract address, counter, and key from `plain`
+```yaml
+remote_receiver:
+  id: rf_rx
+  pin: GPIO8
+  dump: raw
 ```
 
-## Protocol library
+Flash the device.
 
-The protocol implementation lives in `custom_components/somfy_rts/protocol/` and is also available as a standalone Python package (`somfy_rts_protocol/`) with zero Home Assistant dependencies.
+**Step 2: Capture a button press**
 
-```python
-from somfy_rts_protocol import build_frame, frame_to_timings, UP
+Open ESPHome device logs and press a button on your Somfy remote:
 
-frame = build_frame(address=0x970229, counter=42, command=UP)
-timings = frame_to_timings(frame)
-# timings = [9415, -89565, 2416, -2416, ...]
+```bash
+esphome logs rf_proxy.yaml
 ```
+
+You'll see output like:
+
+```
+[I][remote.raw:026]: Received Raw: 2457, -2505, 2465, -2502, 4714, -1243, ...
+```
+
+Copy the full ``Received Raw`` lines (including continuation lines).
+
+**Step 3: Decode**
+
+```bash
+python3 decode_capture.py
+```
+
+Paste the timings and press Ctrl+D. Output:
+
+```
+--- Capture 1 (87 values) ---
+  ✓ Address:  0x970229
+    Counter:  6834 (0x1AB2)
+    Command:  0x1 (MY/STOP)
+    Key byte: 0xA1
+```
+
+Use these values in the integration config flow.
 
 ## License
 
