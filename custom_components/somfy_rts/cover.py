@@ -54,6 +54,7 @@ class SomfyRTSCover(CoverEntity, RestoreEntity):
 
     def __init__(self, entry: SomfyRTSConfigEntry) -> None:
         """Initialize the cover."""
+        self._attr_is_closed = None
         self._entry = entry
         self._transmitter: str = entry.data[CONF_TRANSMITTER]
         self._address: int = entry.data[CONF_ADDRESS]
