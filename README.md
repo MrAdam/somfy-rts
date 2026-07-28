@@ -81,6 +81,7 @@ Copy the full ``Received Raw`` lines (including continuation lines).
 
 **Step 3: Decode**
 
+```bash
 python3 scripts/decode_capture.py
 ```
 
