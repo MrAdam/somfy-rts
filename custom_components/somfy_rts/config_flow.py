@@ -7,6 +7,7 @@ try:
     from rf_protocols import ModulationType
 except ImportError:
     ModulationType = None  # type: ignore[assignment]
+import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigEntry, OptionsFlow
 from homeassistant.core import callback
 from homeassistant.components.radio_frequency import async_get_transmitters
