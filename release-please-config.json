@@ -7,11 +7,6 @@
           "type": "json",
           "path": "custom_components/somfy_rts/manifest.json",
           "jsonpath": "$.version"
-        },
-        {
-          "type": "toml",
-          "path": "uv.lock",
-          "jsonpath": "$.package[?(@.name.value=='somfy-rts')].version"
         }
       ]
     }
