@@ -107,7 +107,6 @@ and documented the Somfy RTS protocol over the years:
 - [**Pushstack**](https://pushstack.wordpress.com/somfy-rts-protocol/) — the definitive protocol reverse-engineering blog post
 - [**Home Assistant architecture discussion #1365**](https://github.com/home-assistant/architecture/discussions/1365) — the radio\_frequency entity platform design
 
-> This project is built with AI assistance. Free time is precious, and so is time with my family.
 ## License
 
 MIT
