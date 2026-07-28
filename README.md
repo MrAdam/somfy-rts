@@ -96,6 +96,18 @@ Paste the timings and press Ctrl+D. Output:
 
 Use these values in the integration config flow.
 
+## Credits
+
+This integration builds on the work of many others who reverse-engineered
+and documented the Somfy RTS protocol over the years:
+
+- [**L-Henke**](https://github.com/L-Henke) — [reference implementation](https://github.com/home-assistant/core/pull/169920) for Home Assistant core and the [rf-protocols library](https://github.com/home-assistant-libs/rf-protocols/pull/8)
+- [**nilsree/flipper-somfy**](https://github.com/nilsree/flipper-somfy) — well-documented Flipper Zero implementation that clarified frame format and timing constants
+- [**Nickduino/Somfy\_Remote**](https://github.com/Nickduino/Somfy_Remote) — the original Arduino library that first documented the protocol in open source
+- [**Pushstack**](https://pushstack.wordpress.com/somfy-rts-protocol/) — the definitive protocol reverse-engineering blog post
+- [**Home Assistant architecture discussion #1365**](https://github.com/home-assistant/architecture/discussions/1365) — the radio\_frequency entity platform design
+
+> This project is built with AI assistance. Free time is precious, and so is time with my family.
 ## License
 
 MIT
