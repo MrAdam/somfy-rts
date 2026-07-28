@@ -10,6 +10,8 @@ except ImportError:
 import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigEntry, OptionsFlow
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResult
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.components.radio_frequency import async_get_transmitters
 from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
 
@@ -104,9 +106,6 @@ class SomfyRTSConfigFlow(ConfigFlow, domain=DOMAIN):
 class SomfyRTSOptionsFlow(OptionsFlow):
     """Handle options for Somfy RTS."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        self._entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
