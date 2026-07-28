@@ -20,7 +20,7 @@ jobs:
           zip -r ../somfy_rts.zip somfy_rts/
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: somfy_rts.zip
           generate_release_notes: true
