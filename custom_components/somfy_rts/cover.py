@@ -13,9 +13,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .command import SomfyRTSCommand
+from .command import SomfyRTSCommand, SomfyRTSButton
 from .const import CONF_ADDRESS, CONF_COUNTER, CONF_TRANSMITTER, DOMAIN
-from .protocol import UP, MY, DOWN
 
 
 async def async_setup_entry(
@@ -57,7 +56,7 @@ class SomfyRTSCover(CoverEntity):
             "model": "RTS Motor",
         }
 
-    async def _send_command(self, command: int) -> None:
+    async def _send_command(self, button: SomfyRTSButton) -> None:
         """Build and transmit a Somfy RTS command."""
         from homeassistant.components.radio_frequency import async_send_command
 
@@ -65,10 +64,10 @@ class SomfyRTSCover(CoverEntity):
         counter = self._entry.data[CONF_COUNTER]
         new_counter = (counter + 1) & 0xFFFF
 
-        cmd = SomfyRTSCommand.build(
+        cmd = SomfyRTSCommand(
             address=self._entry.data[CONF_ADDRESS],
-            counter=counter,
-            command=command,
+            rolling_code=counter,
+            button=button,
         )
 
         await async_send_command(
@@ -83,12 +82,12 @@ class SomfyRTSCover(CoverEntity):
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        await self._send_command(UP)
+        await self._send_command(SomfyRTSButton.UP)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover."""
-        await self._send_command(DOWN)
+        await self._send_command(SomfyRTSButton.DOWN)
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        await self._send_command(MY)
+        await self._send_command(SomfyRTSButton.MY)
