@@ -17,3 +17,6 @@ __pycache__/
 Thumbs.db
 secrets.yaml
 rfbridge.yaml
+
+# uv
+.venv/

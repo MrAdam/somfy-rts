@@ -1,0 +1,18 @@
+[project]
+name = "somfy-rts"
+version = "0.1.0"
+description = "Home Assistant integration for Somfy RTS motorized blinds"
+authors = [
+    { name = "Adam Honoré", email = "adam@honore.io" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
