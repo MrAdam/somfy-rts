@@ -2,6 +2,7 @@
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 
+> [!IMPORTANT]
 > This project is built with AI assistance. Free time is precious, and so is time with my family.
 
 Home Assistant custom integration for Somfy RTS motorized blinds and shutters via RF.
