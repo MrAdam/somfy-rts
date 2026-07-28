@@ -81,7 +81,7 @@ Copy the full ``Received Raw`` lines (including continuation lines).
 
 **Step 3: Decode**
 
-python3 docs/decode_capture.py
+python3 scripts/decode_capture.py
 ```
 
 Paste the timings and press Ctrl+D. Output:
