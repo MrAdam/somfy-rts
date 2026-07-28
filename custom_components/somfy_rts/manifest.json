@@ -1,0 +1,10 @@
+{
+    "domain": "somfy_rts",
+    "name": "Somfy RTS",
+    "codeowners": ["@user"],
+    "dependencies": ["radio_frequency"],
+    "config_flow": true,
+    "documentation": "https://github.com/user/somfy-rts",
+    "iot_class": "assumed_state",
+    "version": "0.1.0"
+}

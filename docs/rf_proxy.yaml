@@ -1,0 +1,88 @@
+# ESPHome RF Proxy for Somfy RTS
+#
+# Hardware: ESP32-C3 + CC1101 (433 MHz transceiver module with SMA)
+# Wiring:
+#   CC1101 CSn  → GPIO4
+#   CC1101 GDO0 → GPIO3  (transmit data)
+#   CC1101 GDO2 → GPIO8  (receive data)
+#   CC1101 SCK  → GPIO5  (SPI clock)
+#   CC1101 MOSI → GPIO6  (SPI data)
+#   CC1101 MISO → GPIO7  (SPI data)
+#
+# Copy this file to your ESPHome directory, create a secrets.yaml with
+# your wifi and API credentials, and flash.
+
+substitutions:
+  name: rf-bridge
+  friendly_name: RF Bridge
+
+esphome:
+  name: ${name}
+
+esp32:
+  board: esp32-c3-devkitc-02
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+spi:
+  clk_pin: GPIO5
+  mosi_pin: GPIO6
+  miso_pin: GPIO7
+
+cc1101:
+  id: cc1101_radio
+  cs_pin: GPIO4
+  # Set to your target frequency. 433.42 MHz for Somfy RTS.
+  # Change to 433.92 or 868.3 for other protocols.
+  frequency: 433.42MHz
+
+remote_transmitter:
+  id: rf_tx
+  pin: GPIO3
+  carrier_duty_percent: 100%
+  on_transmit:
+    then:
+      - cc1101.begin_tx: cc1101_radio
+  on_complete:
+    then:
+      - cc1101.begin_rx: cc1101_radio
+
+remote_receiver:
+  id: rf_rx
+  pin: GPIO8
+  # Keep dump: raw if you want to capture remote codes for learning
+  dump: raw
+
+radio_frequency:
+  - platform: ir_rf_proxy
+    name: RF Proxy Transmitter
+    # Set to match your cc1101 frequency above
+    frequency: 433.42MHz
+    remote_transmitter_id: rf_tx
+    # Retune the CC1101 when a command requests a different frequency
+    on_control:
+      then:
+        - if:
+            condition:
+              lambda: "return x.get_frequency().has_value() && *x.get_frequency() > 0;"
+            then:
+              - cc1101.set_frequency:
+                  id: cc1101_radio
+                  value: !lambda "return *x.get_frequency();"
+  - platform: ir_rf_proxy
+    name: RF Proxy Receiver
+    frequency: 433.92MHz
+    remote_receiver_id: rf_rx
