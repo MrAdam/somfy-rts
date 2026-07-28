@@ -1,11 +1,15 @@
 {
     "domain": "somfy_rts",
     "name": "Somfy RTS",
-    "codeowners": ["@MrAdam"],
-    "dependencies": ["radio_frequency"],
+    "codeowners": [
+        "@MrAdam"
+    ],
+    "dependencies": [
+        "radio_frequency"
+    ],
     "config_flow": true,
     "documentation": "https://github.com/MrAdam/somfy-rts",
     "iot_class": "assumed_state",
     "issue_tracker": "https://github.com/MrAdam/somfy-rts/issues",
-    "version": "0.1.0"
+    "version": "0.1.1"
 }
