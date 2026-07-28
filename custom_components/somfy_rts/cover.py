@@ -1,93 +1,148 @@
-"""Somfy RTS cover entity for Home Assistant.
+"""Cover platform for Somfy RTS."""
 
-Each Somfy motor is represented as a Cover entity with open/close/stop
-commands transmitted via the ``radio_frequency`` platform.
-"""
-
-from __future__ import annotations
-
+import logging
 from typing import Any
 
-from homeassistant.components.cover import CoverEntity, CoverEntityFeature
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from rf_protocols.codes.somfy.rts import SomfyRTSButton
+from rf_protocols.commands.somfy_rts import SomfyRTSCommand
 
-from .command import SomfyRTSCommand, SomfyRTSButton
-from .const import CONF_ADDRESS, CONF_COUNTER, CONF_TRANSMITTER, DOMAIN
+from homeassistant.components.cover import (
+    CoverEntity,
+    CoverEntityFeature,
+)
+from homeassistant.components.radio_frequency import async_send_command
+from homeassistant.const import (
+    STATE_CLOSED,
+    STATE_OPEN,
+    STATE_UNAVAILABLE,
+)
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.restore_state import RestoreEntity
+
+from .const import CONF_ADDRESS, CONF_TRANSMITTER, DOMAIN
+from .entity import SomfyRTSConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    config_entry: SomfyRTSConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up Somfy RTS cover from a config entry."""
-    async_add_entities([SomfyRTSCover(entry)])
+    """Set up the Somfy RTS cover platform."""
+    async_add_entities([SomfyRTSCover(config_entry)])
 
 
-class SomfyRTSCover(CoverEntity):
-    """Representation of a Somfy RTS motorized cover."""
+class SomfyRTSCover(CoverEntity, RestoreEntity):
+    """A Somfy RTS cover controlled via RF."""
 
     _attr_assumed_state = True
+    _attr_available = False
+    _attr_device_class = None
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_should_poll = False
     _attr_supported_features = (
         CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
     )
-    _attr_device_class = None
 
-
-    def __init__(self, entry: ConfigEntry) -> None:
+    def __init__(self, entry: SomfyRTSConfigEntry) -> None:
         """Initialize the cover."""
         self._entry = entry
-        self._attr_unique_id = f"{DOMAIN}_{entry.data[CONF_ADDRESS]:06x}"
-        self._attr_name = entry.title
-        # Work around propcache Cython bug: set all cached state attrs
-        self._attr_is_closed = None
-        self._attr_is_opening = None
-        self._attr_is_closing = None
-
-    @property
-    def device_info(self):
-        """Device info for the motor."""
-        return {
-            "identifiers": {(DOMAIN, f"{self._entry.data[CONF_ADDRESS]:06x}")},
-            "name": self._entry.title,
-            "manufacturer": "Somfy",
-            "model": "RTS Motor",
-        }
-
-    async def _send_command(self, button: SomfyRTSButton) -> None:
-        """Build and transmit a Somfy RTS command."""
-        from homeassistant.components.radio_frequency import async_send_command
-
-        # Read and increment the rolling code
-        counter = self._entry.data[CONF_COUNTER]
-        new_counter = (counter + 1) & 0xFFFF
-
-        cmd = SomfyRTSCommand(
-            address=self._entry.data[CONF_ADDRESS],
-            rolling_code=counter,
-            button=button,
+        self._transmitter: str = entry.data[CONF_TRANSMITTER]
+        self._address: int = entry.data[CONF_ADDRESS]
+        address_hex = format(self._address, "06X")
+        self._attr_unique_id = entry.entry_id
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            manufacturer="Somfy",
+            model="RTS Remote",
+            name=f"Somfy RTS {address_hex}",
         )
 
-        await async_send_command(
-            self.hass,
-            self._entry.data[CONF_TRANSMITTER],
-            cmd,
+    async def async_added_to_hass(self) -> None:
+        """Restore last known state and subscribe to transmitter availability."""
+        await super().async_added_to_hass()
+
+        if (last_state := await self.async_get_last_state()) is not None:
+            if last_state.state == STATE_OPEN:
+                self._attr_is_closed = False
+            elif last_state.state == STATE_CLOSED:
+                self._attr_is_closed = True
+
+        transmitter_entity_id = er.async_validate_entity_id(
+            er.async_get(self.hass), self._transmitter
         )
 
-        # Persist the new counter
-        new_data = {**self._entry.data, CONF_COUNTER: new_counter}
-        self.hass.config_entries.async_update_entry(self._entry, data=new_data)
+        @callback
+        def _async_transmitter_state_changed(
+            event: Event[EventStateChangedData],
+        ) -> None:
+            new_state = event.data["new_state"]
+            transmitter_available = (
+                new_state is not None and new_state.state != STATE_UNAVAILABLE
+            )
+            if transmitter_available != self.available:
+                _LOGGER.info(
+                    "Transmitter %s used by %s is %s",
+                    transmitter_entity_id,
+                    self.entity_id,
+                    "available" if transmitter_available else "unavailable",
+                )
+                self._attr_available = transmitter_available
+                self.async_write_ha_state()
+
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass,
+                [transmitter_entity_id],
+                _async_transmitter_state_changed,
+            )
+        )
+
+        transmitter_state = self.hass.states.get(transmitter_entity_id)
+        self._attr_available = (
+            transmitter_state is not None
+            and transmitter_state.state != STATE_UNAVAILABLE
+        )
+
+    async def _async_send_command(
+        self, button: SomfyRTSButton, *, frame_repeats: int = 3
+    ) -> None:
+        """Transmit the command and persist the rolling code after success."""
+        data = self._entry.runtime_data
+        async with data.lock:
+            rolling_code = data.rolling_code + 1
+            command = SomfyRTSCommand(
+                address=self._address,
+                rolling_code=rolling_code,
+                button=button,
+                frame_repeats=frame_repeats,
+            )
+            await async_send_command(
+                self.hass, self._transmitter, command, context=self._context
+            )
+            data.rolling_code = rolling_code
+            await data.store.async_save({"rolling_code": data.rolling_code})
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover."""
-        await self._send_command(SomfyRTSButton.UP)
+        await self._async_send_command(SomfyRTSButton.UP)
+        self._attr_is_closed = False
+        self.async_write_ha_state()
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover."""
-        await self._send_command(SomfyRTSButton.DOWN)
+        await self._async_send_command(SomfyRTSButton.DOWN)
+        self._attr_is_closed = True
+        self.async_write_ha_state()
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover."""
-        await self._send_command(SomfyRTSButton.MY)
+        await self._async_send_command(SomfyRTSButton.MY)
