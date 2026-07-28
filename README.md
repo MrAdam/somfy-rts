@@ -2,6 +2,8 @@
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/)
 
+> This project is built with AI assistance. Free time is precious, and so is time with my family.
+
 Home Assistant custom integration for Somfy RTS motorized blinds and shutters via RF.
 
 Uses the [radio_frequency](https://developers.home-assistant.io/blog/2026/04/24/radio-frequency-entity-platform/) platform — no cloud, no TaHoma, no proprietary bridge. Works with any RF transmitter that exposes a `RadioFrequencyTransmitterEntity` (ESPHome + CC1101, Broadlink, RFXtrx, etc.).

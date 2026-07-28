@@ -18,14 +18,6 @@ jobs:
         run: |
           rm -rf custom_components/somfy_rts/protocol
           cp -r somfy_rts_protocol custom_components/somfy_rts/protocol
-          # Remove non-library files from the bundled copy
-          rm -f custom_components/somfy_rts/protocol/decode_capture.py
-          rm -f custom_components/somfy_rts/protocol/test_frame.py
-
-      - name: Create zip for HACS
-        run: |
-          cd custom_components
-          zip -r ../somfy_rts.zip somfy_rts/
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
